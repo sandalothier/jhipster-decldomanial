@@ -1,0 +1,208 @@
+
+/**
+ * Balise entity.
+ * @author Sanda
+ *  L'adresse est la localisation d'une immobilisation. Nous avons l'adresse d'un terrain
+ *  et non d'une personne. une personne habite un immeuble qui se trouve en une
+ *  adresse
+ *  Cette table est en relation avec la table Contribuable
+ *  relationship
+ *  	- ManyToOne avec Rue
+ */
+entity Balise {
+	longitude Double
+	latitude Double
+}
+/**
+ * Collectivite entity.
+ * @author sanda
+ *  C'est le recensement de l'ensemble des collectivités
+ *  du pays regroupé par cantons
+ *  - Algorithme de référencement des collectivités
+ *  - Le champ refFiscal doit être ajouté en tant que retournement
+ *  d'une méthode
+ *  /
+ */
+entity Collectivite {
+	nomCollectivite String required
+}
+/**
+ * DomaineCollectivite entity.
+ * @author sanda
+ *  C'est le domaine de couverture de la collectivité
+ *  - La date doit être automatise et retenir la date
+ *  d'enregistrement
+ *  - Un algorithme de réferencement fiscal des domaines et inclure 
+ * 	- Nom collectivité
+ * 	- Id du canton
+ *  - un champ qui retourne la valeur de cet algorithme
+ *  - Une relation de OneToMany avec la balise
+ *  - Une relation de ManyToOne avec la collectivité
+ *  - Une relation de OneToMany avec le TerrainPrimaire
+ */
+entity DomaineCollectivite{
+	dateRecensement Date required
+    refDomaine String
+}
+/**
+ * GestionCollectivite entity.
+ * @author sanda
+ *  C'est la periode au cours de laquelle un certeins nombre
+ *  de personne ont géré une collectivité
+ *  relation
+ *  	- OneToMany avec Contribuable comme gestionnaire
+ *  	- ManyToOne avec Collectivité
+ */
+entity GestionCollectivite{
+	dateDebut Date required
+}
+enum Type {
+	TERRAIN_PRIMAIRE, TERRAIN_ACQUIS
+}
+/**
+ * Terrain entity.
+ * @author sanda
+ *  Le terrain acquis est celui qui 'a  fait l'objet d'au moins une vente
+ *  depuis son lotissement
+ *  - Trouver un algorithme qui donne la référence fiscale du terrain
+ *  - Cet algorithme doit prendre en compte:
+ *  	- Numero(s) fiscal(aux) de(s) lot(s) qui le compose
+ *  	- le signe "&" se trouve entre les numéros s'il s'agit d'un agrandisse
+ *  	ment du terrain 128&131et
+ *  	- Le signe "/" s'il s'agit d'un morcellement
+ *  - Relationships
+ *  	- ManyToMany avec TerrainPrimaire
+ *  	- ManyToMany avec TypeTerrain
+ * 	  ManyToMany avec Contribuable
+ *  	- OneToMany avec ElementTerrain
+ *  	- OneToMany avec Balises
+ *  	- OneToMany avec Adresse
+ */
+entity Terrain {
+	refFiscal String
+    type Type
+	dateAcquisition Date
+	nomTerrain String required
+	superficie Double required
+	valeur Double
+}
+/**
+ * ElementTerrain entity.
+ * @author sanda
+ *  La composition du terrain est tout ce qui peut se trouver sur
+ *  un terrain à l'image de:
+ *  	- Bâtiment
+ *  	- Concession
+ *  	- Immeuble
+ *  	- Culture
+ *  	- Piscine
+ *  	- Gazon
+ *  	- Forêt etc.
+ */
+entity ElementTerrain {
+	nomComposant String required
+}
+/**
+ * ComposantTerrain entity.
+ * @author sanda
+ *  	C'est tout ce qui constitue un terrain. dans cette table
+ *  	nous dirons par exemple que ce terrain X est composé de 3 bâtiments,
+ *  	2 piscines etc depuis le 23 Avril 2019
+ *  	relation
+ *  		- OneToOne avec ElementTerrain
+ *  		- OneToMany avec ElementComposantTerrain
+ */
+entity ComposantTerrain {
+	dateRecensement Date required
+	nombreElement Integer required
+}
+/**
+ * DetailComposantTerrain entity.
+ * @author sanda
+ *  	C'est le detail des infos concernant tout ce qui constitue un terrain. dans cette table
+ *  	nous dirons par exemple que ce elemnt X du terrain (s'appelle Alfa à une superficie de 13
+ * a et de tel standing)
+ *  	relation
+ *  		- OneToOne avec ElementTerrain
+ *  		- OneToMany avec ElementComposantTerrain
+ * 		  OneToOne avec Standing
+ */
+entity DetailComposantTerrain {
+	nomComposant String required
+	superficie Double required
+}
+/**
+ * TypeTerrain entity.
+ * @author sanda
+ *  C'est les type de terrain que l'on pourrai avoir
+ *  	- Agricole
+ *  	- Forestier
+ *  	- Urbain
+ *  	- Carrière
+ *  	- Exploitation etc
+ */
+entity TypeTerrain {
+	typeTerrain String
+}
+entity Unite {
+	unite String
+}
+/**
+ * ConversionUnite entity.
+ * @author sanda
+ *  cette table permet la conversion des unités vers
+ *  d'autres unités. Pour être plus performant, l'idéal
+ *  est de chercher sur github pour voir si cette situation 
+ *  n'a pas été déjà traite
+ * RELATION
+ *   - OneToMany avec UniteRef
+ *   - OneToMany avec UniteDestination
+ */
+entity ConversionUnite {
+	valeur Double
+}
+relationship OneToMany {
+    Collectivite to DomaineCollectivite
+}
+relationship OneToMany {
+    Collectivite to GestionCollectivite
+}
+relationship OneToMany {
+    DomaineCollectivite to Terrain
+}
+relationship OneToMany {
+    Terrain to TypeTerrain
+}
+relationship OneToMany {
+    Terrain to ComposantTerrain
+}
+relationship OneToMany {
+    Terrain to ComposantTerrain
+}
+relationship OneToMany {
+    Terrain to Balise
+}
+relationship OneToOne {
+    ComposantTerrain to ElementTerrain
+}
+relationship OneToMany {
+    ComposantTerrain to DetailComposantTerrain
+}
+relationship OneToMany {
+    DetailComposantTerrain to Unite
+}
+relationship OneToMany {
+    Unite to ConversionUnite
+}
+relationship OneToMany {
+    Regions to Collectivite
+}
+// Set pagination options
+paginate Collectivite, DetailComposantTerrain with infinite-scroll
+paginate DomaineCollectivite, GestionCollectivite, Terrain, ElementTerrain, ComposantTerrain with pagination
+// Use Data Transfert Objects (DTO)
+dto InfoDeclaration, RecapitulationRetenus, RemunerationTiers, LivreDePaieDeclare with mapstruct
+// Set service options to all except few
+service all with serviceImpl
+// Set an angular suffix
+// angularSuffix * with mySuffix
